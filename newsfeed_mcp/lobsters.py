@@ -6,8 +6,6 @@ from datetime import datetime
 
 import requests
 
-from inloop_kit import tool
-
 _HOTTEST_URL = "https://lobste.rs/hottest.json"
 _STORY_URL = "https://lobste.rs/s/{}.json"
 
@@ -134,52 +132,29 @@ def _format_comment_page(comments: list[Comment], page: int) -> str:
     return "\n".join(lines).rstrip()
 
 
-@tool(
-    name="lobsters",
-    description=(
-        "Fetches the current Lobste.rs front page (hottest stories) via the official API, "
-        "returning title, URL, points, comment count, and discussion link for each story, 10 "
-        "per page, in the site's actual live rank order. "
-        "Use when the user wants to see what's currently popular or trending on Lobste.rs, a "
-        "programming and tech-focused link aggregator. "
-        "Does not support past dates (the API exposes no historical rankings) or return article "
-        "text/comments — use a general-purpose web page fetching tool for a linked story's "
-        "body, or `lobsters_comments` for the discussion."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "page": {"type": "integer", "description": "Page number, starting at 1."},
-        },
-        "required": [],
-    },
-)
-def feed(args: dict) -> str:
-    page = max(1, int(args.get("page", 1)))
+def feed(page: int = 1) -> str:
+    """Fetches the current Lobste.rs front page (hottest stories) via the official API,
+    returning title, URL, points, comment count, and discussion link for each story, 10
+    per page, in the site's actual live rank order.
+    Use when the user wants to see what's currently popular or trending on Lobste.rs, a
+    programming and tech-focused link aggregator.
+    Does not support past dates (the API exposes no historical rankings) or return article
+    text/comments — use a general-purpose web page fetching tool for a linked story's
+    body, or `lobsters_comments` for the discussion.
+    """
+    page = max(1, int(page))
     return _format_page(_fetch_news(), page)
 
 
-@tool(
-    name="lobsters_comments",
-    description=(
-        "Fetches all comments from a Lobste.rs story discussion, including nested replies, "
-        "preserving the site's own nested reply structure, 50 comments per page. "
-        "Use when the user wants to see what people are saying, discussing, or debating about "
-        "a Lobste.rs story, or wants a specific comment sub-thread. "
-        "Does not fetch the linked story's content — use a general-purpose web page fetching "
-        "tool for that; accepts a story's Lobste.rs URL (https://lobste.rs/s/<short_id>/...) or "
-        "its short id, not the front page itself."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "url": {"type": "string", "description": "The Lobste.rs story URL or short id."},
-            "page": {"type": "integer", "description": "Page number, starting at 1."},
-        },
-        "required": ["url"],
-    },
-)
-def comments(args: dict) -> str:
-    short_id = _extract_short_id(args["url"])
-    page = max(1, int(args.get("page", 1)))
+def comments(url: str, page: int = 1) -> str:
+    """Fetches all comments from a Lobste.rs story discussion, including nested replies,
+    preserving the site's own nested reply structure, 50 comments per page.
+    Use when the user wants to see what people are saying, discussing, or debating about
+    a Lobste.rs story, or wants a specific comment sub-thread.
+    Does not fetch the linked story's content — use a general-purpose web page fetching
+    tool for that; accepts a story's Lobste.rs URL (https://lobste.rs/s/<short_id>/...) or
+    its short id, not the front page itself.
+    """
+    short_id = _extract_short_id(url)
+    page = max(1, int(page))
     return _format_comment_page(_fetch_comments(short_id), page)

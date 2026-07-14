@@ -9,8 +9,6 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from inloop_kit import tool
-
 FEED_URL = "https://techcrunch.com/feed/"
 PT_TZ = ZoneInfo("America/Los_Angeles")
 
@@ -117,33 +115,15 @@ def _format_page(articles: list[Article], page: int, date_arg: str) -> str:
     return "\n".join(lines).rstrip()
 
 
-@tool(
-    name="techcrunch",
-    description=(
-        "Fetches TechCrunch articles published on a given date via the site's RSS feed, "
-        "returning title, URL, and a short description for each, 10 per page. "
-        "Use when the user wants TechCrunch headlines or news for today, yesterday, or a "
-        "specific date, or wants to browse what TechCrunch covered. "
-        "Does not fetch full article bodies — use a general-purpose web page fetching tool with "
-        "a result's URL for that; the date must be 'today', 'yesterday', or YYYY-MM-DD (convert "
-        "other phrasing like 'last Monday' yourself first)."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "date": {
-                "type": "string",
-                "description": "'today', 'yesterday', or YYYY-MM-DD.",
-            },
-            "page": {
-                "type": "integer",
-                "description": "Page number, starting at 1.",
-            },
-        },
-        "required": ["date"],
-    },
-)
-def feed(args: dict) -> str:
-    date_arg = str(args.get("date", "today"))
-    page = max(1, int(args.get("page", 1)))
+def feed(date: str, page: int = 1) -> str:
+    """Fetches TechCrunch articles published on a given date via the site's RSS feed,
+    returning title, URL, and a short description for each, 10 per page.
+    Use when the user wants TechCrunch headlines or news for today, yesterday, or a
+    specific date, or wants to browse what TechCrunch covered.
+    Does not fetch full article bodies — use a general-purpose web page fetching tool with
+    a result's URL for that; the date must be 'today', 'yesterday', or YYYY-MM-DD (convert
+    other phrasing like 'last Monday' yourself first).
+    """
+    date_arg = str(date)
+    page = max(1, int(page))
     return _format_page(_fetch_news(date_arg), page, date_arg)

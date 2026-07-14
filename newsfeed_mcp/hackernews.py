@@ -8,8 +8,6 @@ from datetime import datetime, timezone
 
 import requests
 
-from inloop_kit import tool
-
 _TOP_STORIES_URL = "https://hacker-news.firebaseio.com/v0/topstories.json"
 _ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{}.json"
 _UTC = timezone.utc
@@ -193,52 +191,29 @@ def _format_comment_page(comments: list[Comment], page: int, truncated: bool) ->
     return "\n".join(lines).rstrip()
 
 
-@tool(
-    name="hackernews",
-    description=(
-        "Fetches the current Hacker News front page via the official API, returning title, "
-        "URL, points, comment count, and HN discussion link for each story, 10 per page, in "
-        "the site's actual live rank order (matching news.ycombinator.com). "
-        "Use when the user wants to see what's currently popular or trending on Hacker News. "
-        "Does not support past dates (HN exposes no historical rankings) or return article "
-        "text/comments — use a general-purpose web page fetching tool for a linked article's "
-        "body, or `hackernews_comments` for the discussion."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "page": {"type": "integer", "description": "Page number, starting at 1."},
-        },
-        "required": [],
-    },
-)
-def feed(args: dict) -> str:
-    page = max(1, int(args.get("page", 1)))
+def feed(page: int = 1) -> str:
+    """Fetches the current Hacker News front page via the official API, returning title,
+    URL, points, comment count, and HN discussion link for each story, 10 per page, in
+    the site's actual live rank order (matching news.ycombinator.com).
+    Use when the user wants to see what's currently popular or trending on Hacker News.
+    Does not support past dates (HN exposes no historical rankings) or return article
+    text/comments — use a general-purpose web page fetching tool for a linked article's
+    body, or `hackernews_comments` for the discussion.
+    """
+    page = max(1, int(page))
     return _format_page(_fetch_news(), page)
 
 
-@tool(
-    name="hackernews_comments",
-    description=(
-        "Fetches all comments from a Hacker News discussion, including nested replies, "
-        "preserving the site's own nested reply structure, 50 comments per page. "
-        "Use when the user wants to see what people are saying, discussing, or debating about "
-        "a Hacker News story, or wants a specific comment sub-thread. "
-        "Does not fetch the linked article's content — use a general-purpose web page fetching "
-        "tool for that; accepts a story's or comment's HN discussion URL "
-        "(https://news.ycombinator.com/item?id=...) or numeric id, not the front page itself."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "url": {"type": "string", "description": "The HN discussion or comment URL, or numeric item id."},
-            "page": {"type": "integer", "description": "Page number, starting at 1."},
-        },
-        "required": ["url"],
-    },
-)
-def comments(args: dict) -> str:
-    item_id = _extract_item_id(args["url"])
-    page = max(1, int(args.get("page", 1)))
+def comments(url: str, page: int = 1) -> str:
+    """Fetches all comments from a Hacker News discussion, including nested replies,
+    preserving the site's own nested reply structure, 50 comments per page.
+    Use when the user wants to see what people are saying, discussing, or debating about
+    a Hacker News story, or wants a specific comment sub-thread.
+    Does not fetch the linked article's content — use a general-purpose web page fetching
+    tool for that; accepts a story's or comment's HN discussion URL
+    (https://news.ycombinator.com/item?id=...) or numeric id, not the front page itself.
+    """
+    item_id = _extract_item_id(url)
+    page = max(1, int(page))
     all_comments, truncated = _fetch_comments(item_id)
     return _format_comment_page(all_comments, page, truncated)
